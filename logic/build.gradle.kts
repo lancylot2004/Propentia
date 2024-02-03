@@ -13,23 +13,20 @@ dependencies {
     kotlin("test")
 }
 
-//tasks.test {
+// tasks.test {
 //    useJUnitPlatform()
-//}
+// }
 
-//kotlin {
+// kotlin {
 //    jvmToolchain(21)
-//}
+// }
 
 kotlin {
-    kotlin {
-        js(IR) {
-            browser()
-            binaries.library()
-            binaries.executable()
-            generateTypeScriptDefinitions()
-
-        }
+    js(IR) {
+        browser()
+        binaries.library()
+        binaries.executable()
+        generateTypeScriptDefinitions()
     }
 
     // No @ExperimentalJsExport dawdle.
