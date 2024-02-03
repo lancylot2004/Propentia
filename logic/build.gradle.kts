@@ -23,12 +23,12 @@ dependencies {
 
 kotlin {
     kotlin {
-        // .... other targets
         js(IR) {
-//            moduleName = "lelogic"
-            nodejs()
+            browser()
             binaries.library()
             binaries.executable()
+            generateTypeScriptDefinitions()
+
         }
     }
 
