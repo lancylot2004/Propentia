@@ -2,6 +2,7 @@ package prop
 
 typealias ID = Int
 
+@JsExport
 sealed class PJust {
     // === Abstracts ===
 
@@ -152,5 +153,11 @@ sealed class PJust {
         override val tag = "Prem"
         override val latexTag = tag
         override val desc = "An assumption which the proof is based upon."
+    }
+
+    data class Sta(val orig: ID) : PJust() {
+        override val tag = "Sta"
+        override val latexTag = Prem.tag
+        override val desc = "A previous expression repeated for clarity."
     }
 }

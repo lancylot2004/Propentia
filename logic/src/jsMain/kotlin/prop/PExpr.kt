@@ -1,7 +1,5 @@
 package prop
 
-import common.compareBy
-
 typealias VarID = String
 
 @JsExport
@@ -21,6 +19,14 @@ sealed class PExpr {
     data class Imp(val ant: PExpr, val csq: PExpr) : PExpr()
 
     data class Iff(val lhs: PExpr, val rhs: PExpr) : PExpr()
+
+    infix fun and(rhs: PExpr): PExpr = And(this, rhs)
+
+    infix fun or(rhs: PExpr): PExpr = Or(this, rhs)
+
+    infix fun imp(rhs: PExpr): PExpr = Imp(this, rhs)
+
+    infix fun iff(rhs: PExpr): PExpr = Iff(this, rhs)
 
     /** Is a propositional atom, top, or bottom. (Excl. negated atomics.) */
     fun isAtomic(): Boolean {
@@ -103,4 +109,11 @@ sealed class PExpr {
             is Iff -> lhs.eval(env).compareBy(rhs.eval(env), Boolean::equals)
         }
     }
+}
+
+fun Boolean?.compareBy(
+    other: Boolean?,
+    comparator: (Boolean, Boolean) -> Boolean,
+): Boolean? {
+    return this?.let { lhsB -> other?.let { rhsB -> comparator(lhsB, rhsB) } }
 }
