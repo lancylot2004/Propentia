@@ -13,14 +13,10 @@ sealed class PProof {
 
     abstract fun root(): Box
 
-    companion object {
-        fun new(): Box = IDGen().let { Box(it.getID(), null, null, it) }
-    }
-
     data class Box(
-        override val id: Int,
+        override val id: ID,
         override val parent: Box?,
-        val adj: Box?,
+        var adj: Box?,
         val idGen: IDGen,
         var children: Array<PProof> = arrayOf(),
     ) : PProof() {
@@ -52,6 +48,35 @@ sealed class PProof {
                 children.toMutableList()
                     .apply { add(ind, newObj) }
                     .toTypedArray()
+        }
+
+        /** Appends a [Line] to the end of [this]. Returns its [ID]. */
+        fun appendLine(
+            expr: PExpr,
+            just: PJust,
+        ): ID {
+            val newID = idGen.getID()
+            children += Line(newID, this, expr, just)
+            return newID
+        }
+
+        /** Appends a [Box] to the end of [this]. Returns its [ID]. */
+        fun appendBox(init: Box.() -> Unit) {
+            val newBox = Box(idGen.getID(), this, null, idGen)
+            newBox.init()
+            children += newBox
+        }
+
+        /** Appends two parallel [Box]s to the end of [this]. Returns their [ID]s in an array. */
+        fun appendParallel(initParallel: Box.(left: Box, right: Box) -> Unit): Array<ID> {
+            val (leftID, rightID) = Pair(idGen.getID(), idGen.getID())
+            val leftBox = Box(leftID, this, null, idGen)
+            val rightBox = Box(rightID, this, leftBox, idGen)
+            leftBox.adj = rightBox
+            initParallel(leftBox, rightBox)
+            children += leftBox
+            children += rightBox
+            return arrayOf(leftID, rightID)
         }
     }
 
