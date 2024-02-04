@@ -32,7 +32,11 @@ kotlin {
     // No @ExperimentalJsExport dawdle.
     sourceSets {
         val jsMain by getting
-        val jsTest by getting
+        val jsTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
 
         all {
             languageSettings.apply {
