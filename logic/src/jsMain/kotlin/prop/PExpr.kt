@@ -20,6 +20,14 @@ sealed class PExpr {
 
     data class Iff(val lhs: PExpr, val rhs: PExpr) : PExpr()
 
+    infix fun and(rhs: PExpr): PExpr = And(this, rhs)
+
+    infix fun or(rhs: PExpr): PExpr = Or(this, rhs)
+
+    infix fun imp(rhs: PExpr): PExpr = Imp(this, rhs)
+
+    infix fun iff(rhs: PExpr): PExpr = Iff(this, rhs)
+
     /** Is a propositional atom, top, or bottom. (Excl. negated atomics.) */
     fun isAtomic(): Boolean {
         return when (this) {
