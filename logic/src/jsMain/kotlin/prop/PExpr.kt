@@ -1,7 +1,5 @@
 package prop
 
-import common.compareBy
-
 typealias VarID = String
 
 @JsExport
@@ -103,4 +101,11 @@ sealed class PExpr {
             is Iff -> lhs.eval(env).compareBy(rhs.eval(env), Boolean::equals)
         }
     }
+}
+
+fun Boolean?.compareBy(
+    other: Boolean?,
+    comparator: (Boolean, Boolean) -> Boolean,
+): Boolean? {
+    return this?.let { lhsB -> other?.let { rhsB -> comparator(lhsB, rhsB) } }
 }

@@ -2,6 +2,7 @@ package prop
 
 typealias ID = Int
 
+@JsExport
 sealed class PJust {
     // === Abstracts ===
 
