@@ -1,21 +1,19 @@
 import "./App.css"
 
 import React from 'react';
-
 import useMediaQuery from "@mui/material/useMediaQuery"
 import { createTheme, ThemeProvider } from "@mui/material/styles"
 import { Container, Fab } from "@mui/material";
 
 import DrawerPage from "./views/DrawerPage"
 
-import logic from "logic";
+import { PExpr } from "logic";
 
 function App() {
   const prefersDark = useMediaQuery("(prefers-color-scheme: dark)");
 
-  const a = logic.prop.PExpr.Top
-  alert(a.isAtomic)
-  alert(logic.prop.foo())
+  const a = PExpr.Top
+  alert(a.isAtomic())
 
   const theme = React.useMemo (
     () => createTheme({
