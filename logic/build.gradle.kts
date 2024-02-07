@@ -11,8 +11,8 @@ repositories {
 
 kotlin {
     js(IR) {
-        browser()
-        binaries.library()
+        useEsModules()
+        nodejs()
         binaries.executable()
         generateTypeScriptDefinitions()
     }
