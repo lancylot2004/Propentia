@@ -8,6 +8,7 @@
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
+    "compile-kotlin": "cd logic && ./gradlew build",
     "update-logic": "npm update logic"
   },
   "dependencies": {
