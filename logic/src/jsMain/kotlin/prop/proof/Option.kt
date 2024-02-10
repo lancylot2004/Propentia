@@ -21,15 +21,15 @@ class Option(
 sealed class OptionTree {
     var thenLines: Array<OptionTree> = arrayOf()
 
-    class Tree(val onLine: ID) : OptionTree()
+    data class Tree(val onLine: ID) : OptionTree()
 
-    class AnyInScope : OptionTree()
+    data object AnyInScope : OptionTree()
 
-    class AnyOutOfScope : OptionTree()
+    data object AnyOutOfScope : OptionTree()
 
-    class Input : OptionTree()
+    data object Input : OptionTree()
 
-    class Choice(val exprs: Array<Expression>) : OptionTree() {
+    data class Choice(val exprs: Array<Expression>) : OptionTree() {
         @JsExport.Ignore
         constructor(vararg exprs: Expression) : this(exprs.toList().toTypedArray())
     }

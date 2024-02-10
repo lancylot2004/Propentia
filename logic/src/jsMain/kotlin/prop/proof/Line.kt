@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:no-wildcard-imports")
+
 package prop.proof
 
 import prop.Expression
@@ -26,26 +28,24 @@ class Line(
         // ImpI, IffI, can be used on any pair.
         listOf(ImpI::class, IffI::class)
             .forEach {
-                availableSteps.add(Option(it, Input() then Input()))
+                availableSteps.add(Option(it, Input then Input))
             }
 
         // EM, PC, can be used on anything.
         listOf(EM::class, PC::class)
             .forEach {
-                availableSteps.add(Option(it, Input()))
+                availableSteps.add(Option(it, Input))
             }
-
-        // TODO: NotI can be used given a negated expression or by choosing one out of scope.
 
         if (currScope.isNotEmpty()) {
             // AndI can be used on any pair of existing lines.
-            availableSteps.add(Option(AndI::class, AnyInScope() then AnyInScope()))
+            availableSteps.add(Option(AndI::class, AnyInScope then AnyInScope))
 
             // DNotI can be used on any existing line.
-            availableSteps.add(Option(DNotI::class, AnyInScope()))
+            availableSteps.add(Option(DNotI::class, AnyInScope))
 
             // OrI can be used on an existing line and either another line or a user input.
-            availableSteps.add(Option(OrI::class, AnyInScope() then Input(), Input() then AnyInScope()))
+            availableSteps.add(Option(OrI::class, AnyInScope then Input, Input then AnyInScope))
         }
 
         // For matching antecedents and negated consequents for ImpE and MT respectively.
@@ -64,11 +64,11 @@ class Line(
                 }
                 is Or -> {
                     // OrE can be used on any existing Or to achieve any result.
-                    availableSteps.add(Option(OrE::class, Tree(it.id) then Input()))
+                    availableSteps.add(Option(OrE::class, Tree(it.id) then Input))
                 }
                 is Bottom -> {
                     // BotE can be used on any existing Bottom to achieve any result.
-                    availableSteps.add(Option(BotE::class, Input()))
+                    availableSteps.add(Option(BotE::class, Input))
                 }
                 is Not -> {
                     // DNotE can be used on any existing double negation.
@@ -115,6 +115,12 @@ class Line(
                     availableSteps.add(Option(NotE::class, Tree(other.id) then (Tree(it.id))))
                 }
             }
+
+            if (it.expr is Not) {
+                // NotI can be used given a negated expression or by choosing one out of scope.
+                availableSteps.add(Option(NotI::class, Tree(it.id)))
+                availableSteps.add(Option(NotI::class, AnyOutOfScope))
+            }
         }
 
         return availableSteps
@@ -124,6 +130,7 @@ class Line(
                     it.key,
                     it.value
                         .flatMap { opt -> opt.optionTrees.asIterable() }
+                        .distinct()
                         .toTypedArray(),
                 )
             }
