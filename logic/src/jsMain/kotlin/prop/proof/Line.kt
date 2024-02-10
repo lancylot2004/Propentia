@@ -85,7 +85,6 @@ class Line(
             }
         }
 
-        // TODO: Update second iteration to work with [Option]
         // Second iteration, check rest of rules using collected data.
         currScope.forEach {
             // We cannot use [when] here because these tests potentially overlap.
@@ -118,7 +117,16 @@ class Line(
             }
         }
 
-        // TODO: merge options of identical steps.
-        return availableSteps.toTypedArray()
+        return availableSteps
+            .groupBy { it.infRule }
+            .map {
+                Option(
+                    it.key,
+                    it.value
+                        .flatMap { opt -> opt.optionTrees.asIterable() }
+                        .toTypedArray(),
+                )
+            }
+            .toTypedArray()
     }
 }
