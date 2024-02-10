@@ -13,7 +13,7 @@ class Line(
     override val id: Int,
     override val parent: Box,
     val expr: Expression,
-    val just: InferenceRule,
+    val infRule: InferenceRule,
 ) : Proof() {
     override fun root(): Box = parent.root()
 

@@ -96,19 +96,6 @@ sealed class Expression {
             else -> false
         }
     }
-
-    fun eval(env: Map<VarID, Boolean>): Boolean? { // TODO: Maps can't be type marshalled to js
-        return when (this) {
-            Top -> true
-            Bottom -> false
-            is Var -> env[id]
-            is Not -> expr.eval(env)?.let { !it }
-            is And -> lhs.eval(env).compareBy(rhs.eval(env), Boolean::and)
-            is Or -> lhs.eval(env).compareBy(rhs.eval(env), Boolean::or)
-            is Imp -> ant.eval(env).compareBy(csq.eval(env)) { antB, csqB -> !antB || csqB }
-            is Iff -> lhs.eval(env).compareBy(rhs.eval(env), Boolean::equals)
-        }
-    }
 }
 
 fun Boolean?.compareBy(
