@@ -1,7 +1,5 @@
 package prop
 
-typealias ID = Int
-
 @JsExport
 sealed class InferenceRule {
     // === Abstracts ===

@@ -2,6 +2,7 @@ package prop
 
 import prop.Expression.Var
 import prop.InferenceRule.*
+import prop.proof.Proof
 
 /** p | q |- (p -> q) -> q*/
 @JsExport
