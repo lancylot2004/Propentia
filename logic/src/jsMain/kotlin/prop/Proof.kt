@@ -2,72 +2,56 @@
 
 package prop
 
-import prop.PExpr.*
-import prop.PJust.*
+import prop.Expression.*
+import prop.InferenceRule.*
 import kotlin.reflect.KClass
 
 @JsExport
-sealed class PProof {
-    abstract val id: Int
+sealed class Proof {
+    abstract val id: ID
     abstract val parent: Box?
 
     abstract fun root(): Box
 
-    data class Box(
+    companion object {
+        fun new(init: Box.() -> Unit): Box {
+            val box = IDGen().let { Box(it.getID(), null, null, it) }
+            box.init()
+            return box
+        }
+    }
+
+    class Box(
         override val id: ID,
         override val parent: Box?,
         var adj: Box?,
-        val idGen: IDGen,
-        var children: Array<PProof> = arrayOf(),
-    ) : PProof() {
+        protected val idGen: IDGen,
+        var children: Array<Proof> = arrayOf(),
+    ) : Proof() {
         override fun root(): Box {
             var currRoot = this
             while (currRoot.parent != null) currRoot = currRoot.parent!!
             return currRoot
         }
 
-        fun insertAfter(
-            id: ID,
-            newObj: PProof,
-        ) {
-            val ind = children.indexOfFirst { it.id == id }
-            if (ind == -1) throw NoSuchElementException("Item with id $id does not exist in this proof!")
-            children =
-                children.toMutableList()
-                    .apply { add(ind + 1, newObj) }
-                    .toTypedArray()
-        }
-
-        fun insertBefore(
-            id: ID,
-            newObj: PProof,
-        ) {
-            val ind = children.indexOfFirst { it.id == id }
-            if (ind == -1) throw NoSuchElementException("Item with id $id does not exist in this proof!")
-            children =
-                children.toMutableList()
-                    .apply { add(ind, newObj) }
-                    .toTypedArray()
-        }
-
-        /** Appends a [Line] to the end of [this]. Returns its [ID]. */
+        /** Appends a [Line] to the end of this [Box]. Returns its [ID]. */
         fun appendLine(
-            expr: PExpr,
-            just: PJust,
+            expr: Expression,
+            just: InferenceRule,
         ): ID {
             val newID = idGen.getID()
             children += Line(newID, this, expr, just)
             return newID
         }
 
-        /** Appends a [Box] to the end of [this]. Returns its [ID]. */
+        /** Appends a [Box] to the end of this [Box]. Returns its [ID]. */
         fun appendBox(init: Box.() -> Unit) {
             val newBox = Box(idGen.getID(), this, null, idGen)
             newBox.init()
             children += newBox
         }
 
-        /** Appends two parallel [Box]s to the end of [this]. Returns their [ID]s in an array. */
+        /** Appends two parallel [Box]s to the end of this [Box]. Returns their [ID]s in an array. */
         fun appendParallel(initParallel: Box.(left: Box, right: Box) -> Unit): Array<ID> {
             val (leftID, rightID) = Pair(idGen.getID(), idGen.getID())
             val leftBox = Box(leftID, this, null, idGen)
@@ -83,15 +67,15 @@ sealed class PProof {
     data class Line(
         override val id: Int,
         override val parent: Box,
-        val expr: PExpr,
-        val just: PJust,
-    ) : PProof() {
+        val expr: Expression,
+        val just: InferenceRule,
+    ) : Proof() {
         override fun root(): Box = parent.root()
 
         /** Returns natural deduction steps that can be made _before_ this line. */
         fun availableSteps(): Array<String> {
             val currScope = scope()
-            val availableSteps = mutableSetOf<KClass<out PJust>>()
+            val availableSteps = mutableSetOf<KClass<out InferenceRule>>()
 
             // ImpI, NotI, TopI, IffI, EM, PC, can be used anywhere.
             availableSteps.addAll(arrayOf(ImpI::class, NotI::class, TopI::class, IffI::class, EM::class, PC::class))
@@ -102,16 +86,16 @@ sealed class PProof {
             }
 
             // For matching arbitrary expressions.
-            val exprs = mutableSetOf<PExpr>()
+            val exprs = mutableSetOf<Expression>()
 
             // For matching antecedents for ImpE.
-            val ants = mutableSetOf<PExpr>()
+            val ants = mutableSetOf<Expression>()
 
             // For matching negated consequents for MT.
-            val notCsqs = mutableSetOf<PExpr>()
+            val notCsqs = mutableSetOf<Expression>()
 
             // For matching expressions in double implications for IffE.
-            val iffExprs = mutableSetOf<PExpr>()
+            val iffExprs = mutableSetOf<Expression>()
 
             // Process eliminations, and build up data for rest.
             currScope.forEach {
@@ -183,21 +167,22 @@ sealed class PProof {
         }
     }
 
-    fun scope(): Array<Line> {
-        if (parent == null) return arrayOf()
-
-        return parent!!
-            .children
-            .dropLastWhile { it != this }
-            .flatMap { if (it is Line) listOf(it) else it.scope().asIterable() }
-            .union(parent!!.scope().asIterable())
-            .toTypedArray()
-    }
+    fun scope(): Array<Line> =
+        when (parent) {
+            null -> arrayOf()
+            else ->
+                parent!!
+                    .children
+                    .dropLastWhile { it != this }.drop(1) // Drop self and all after.
+                    .filterIsInstance<Line>() // Ignore sibling boxes.
+                    .union(parent!!.scope().asIterable()) // Recursively call scope upwards.
+                    .toTypedArray()
+        }
 }
 
 @JsExport
 class IDGen {
-    private var currID: Int = 0
+    private var currID: ID = 0
 
-    fun getID(): Int = currID++
+    fun getID(): ID = currID++
 }

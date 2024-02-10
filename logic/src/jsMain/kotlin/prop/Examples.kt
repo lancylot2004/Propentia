@@ -1,12 +1,12 @@
 package prop
 
-import prop.PExpr.Var
-import prop.PJust.*
+import prop.Expression.Var
+import prop.InferenceRule.*
 
 /** p | q |- (p -> q) -> q*/
 @JsExport
-fun e1(): PProof =
-    newProof {
+fun e1(): Proof =
+    Proof.new {
         var (impID, csqID) = Pair(0, 0)
         val orID = appendLine(Var("p") or Var("q"), Prem)
         appendBox {

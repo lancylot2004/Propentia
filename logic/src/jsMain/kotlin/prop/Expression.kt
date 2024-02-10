@@ -3,30 +3,30 @@ package prop
 typealias VarID = String
 
 @JsExport
-sealed class PExpr {
-    data object Top : PExpr()
+sealed class Expression {
+    data object Top : Expression()
 
-    data object Bottom : PExpr()
+    data object Bottom : Expression()
 
-    data class Var(val id: VarID) : PExpr()
+    data class Var(val id: VarID) : Expression()
 
-    data class Not(val expr: PExpr) : PExpr()
+    data class Not(val expr: Expression) : Expression()
 
-    data class And(val lhs: PExpr, val rhs: PExpr) : PExpr()
+    data class And(val lhs: Expression, val rhs: Expression) : Expression()
 
-    data class Or(val lhs: PExpr, val rhs: PExpr) : PExpr()
+    data class Or(val lhs: Expression, val rhs: Expression) : Expression()
 
-    data class Imp(val ant: PExpr, val csq: PExpr) : PExpr()
+    data class Imp(val ant: Expression, val csq: Expression) : Expression()
 
-    data class Iff(val lhs: PExpr, val rhs: PExpr) : PExpr()
+    data class Iff(val lhs: Expression, val rhs: Expression) : Expression()
 
-    infix fun and(rhs: PExpr): PExpr = And(this, rhs)
+    infix fun and(rhs: Expression): Expression = And(this, rhs)
 
-    infix fun or(rhs: PExpr): PExpr = Or(this, rhs)
+    infix fun or(rhs: Expression): Expression = Or(this, rhs)
 
-    infix fun imp(rhs: PExpr): PExpr = Imp(this, rhs)
+    infix fun imp(rhs: Expression): Expression = Imp(this, rhs)
 
-    infix fun iff(rhs: PExpr): PExpr = Iff(this, rhs)
+    infix fun iff(rhs: Expression): Expression = Iff(this, rhs)
 
     /** Is a propositional atom, top, or bottom. (Excl. negated atomics.) */
     fun isAtomic(): Boolean {
