@@ -1,8 +1,10 @@
 package prop.proof
 
 import prop.Expression
+import prop.Expression.*
 import prop.InferenceRule
-import kotlin.reflect.KClass
+import prop.InferenceRule.*
+import prop.proof.OptionTree.*
 
 @JsExport
 class Line(
@@ -14,105 +16,109 @@ class Line(
     override fun root(): Box = parent.root()
 
     /** Returns natural deduction steps that can be made _before_ this line. */
-    fun availableSteps(): Array<String> {
+    fun availableSteps(): Array<Option> {
         val currScope = scope()
-        val availableSteps = mutableSetOf<KClass<out InferenceRule>>()
+        val availableSteps = mutableListOf<Option>()
 
-        // ImpI, NotI, TopI, IffI, EM, PC, can be used anywhere.
-        availableSteps.addAll(
-            arrayOf(
-                InferenceRule.ImpI::class,
-                InferenceRule.NotI::class,
-                InferenceRule.TopI::class,
-                InferenceRule.IffI::class,
-                InferenceRule.EM::class,
-                InferenceRule.PC::class,
-            ),
-        )
+        // TopI does not require anything to be used on.
+        availableSteps.add(Option(TopI::class))
+
+        // ImpI, IffI, can be used on any pair.
+        listOf(ImpI::class, IffI::class)
+            .forEach {
+                availableSteps.add(Option(it, Input() then Input()))
+            }
+
+        // EM, PC, can be used on anything.
+        listOf(EM::class, PC::class)
+            .forEach {
+                availableSteps.add(Option(it, Input()))
+            }
+
+        // TODO: NotI can be used given a negated expression or by choosing one out of scope.
 
         if (currScope.isNotEmpty()) {
-            // AndI, OrI, DNotI, can be used on any existing line.
-            availableSteps.addAll(arrayOf(InferenceRule.AndI::class, InferenceRule.OrI::class, InferenceRule.DNotI::class))
+            // AndI can be used on any pair of existing lines.
+            availableSteps.add(Option(AndI::class, AnyInScope() then AnyInScope()))
+
+            // DNotI can be used on any existing line.
+            availableSteps.add(Option(DNotI::class, AnyInScope()))
+
+            // OrI can be used on an existing line and either another line or a user input.
+            availableSteps.add(Option(OrI::class, AnyInScope() then Input(), Input() then AnyInScope()))
         }
 
-        // For matching arbitrary expressions.
-        val exprs = mutableSetOf<Expression>()
-
-        // For matching antecedents for ImpE.
-        val ants = mutableSetOf<Expression>()
-
-        // For matching negated consequents for MT.
-        val notCsqs = mutableSetOf<Expression>()
+        // For matching antecedents and negated consequents for ImpE and MT respectively.
+        val imps = mutableSetOf<Line>()
 
         // For matching expressions in double implications for IffE.
-        val iffExprs = mutableSetOf<Expression>()
+        val iffs = mutableSetOf<Line>()
 
         // Process eliminations, and build up data for rest.
         currScope.forEach {
-            // Adds expression to test for not-phis. Inefficient!
-            exprs.add(it.expr)
-
             // We can use [when] here since an expr will only be one type.
             when (it.expr) {
-                is Expression.And -> {
-                    // AndE can be used on any existing And.
-                    availableSteps.add(InferenceRule.AndE::class)
+                is And -> {
+                    // AndE can be used on any existing And to achieve either its lhs or rhs.
+                    availableSteps.add(Option(AndE::class, Tree(it.id) then Choice(it.expr.lhs, it.expr.rhs)))
                 }
-                is Expression.Or -> {
-                    // OrE can be used on any existing Or.
-                    availableSteps.add(InferenceRule.OrE::class)
+                is Or -> {
+                    // OrE can be used on any existing Or to achieve any result.
+                    availableSteps.add(Option(OrE::class, Tree(it.id) then Input()))
                 }
-                is Expression.Bottom -> {
-                    // BotE can be used on any existing Bottom.
-                    availableSteps.add(InferenceRule.BotE::class)
+                is Bottom -> {
+                    // BotE can be used on any existing Bottom to achieve any result.
+                    availableSteps.add(Option(BotE::class, Input()))
                 }
-                is Expression.Not -> {
+                is Not -> {
                     // DNotE can be used on any existing double negation.
-                    if (it.expr.expr is Expression.Not) availableSteps.add(InferenceRule.DNotE::class)
+                    if (it.expr.expr is Not) availableSteps.add(Option(DNotE::class, Tree(it.id)))
                 }
-                is Expression.Imp -> {
-                    // Add for matching later.
-                    ants.add(it.expr.ant)
-                    notCsqs.add(Expression.Not(it.expr.csq))
-                }
-                is Expression.Iff -> {
+                is Imp -> imps.add(it)
+                is Iff -> {
                     // IffED can be used on any existing double implication.
-                    availableSteps.add(InferenceRule.IffED::class)
+                    availableSteps.add(Option(IffED::class, Tree(it.id)))
 
-                    // Add both LHS and RHS for matching later.
-                    iffExprs.add(it.expr.lhs)
-                    iffExprs.add(it.expr.rhs)
+                    iffs.add(it)
                 }
                 else -> Unit
             }
         }
 
+        // TODO: Update second iteration to work with [Option]
         // Second iteration, check rest of rules using collected data.
         currScope.forEach {
             // We cannot use [when] here because these tests potentially overlap.
-            if (it.expr in ants) {
-                // ImpE can be used on an implication and its antecedent.
-                availableSteps.add(InferenceRule.ImpE::class)
+            imps.forEach { imp ->
+                if (it.expr == (imp.expr as Imp).ant) {
+                    // ImpE can be used on an implication and its antecedent.
+                    availableSteps.add(Option(ImpE::class, Tree(imp.id) then Tree(it.id)))
+                }
+
+                if (it.expr == Not(imp.expr.csq)) {
+                    // MT can be used on an implication and the negation of its consequent.
+                    availableSteps.add(Option(MT::class, Tree(imp.id) then Tree(it.id)))
+                }
             }
 
-            if (it.expr in iffExprs) {
-                // IffE can be used on a double implication and one of its sides.
-                availableSteps.add(InferenceRule.IffE::class)
+            iffs.forEach { iff ->
+                (iff.expr as Iff).let { iffExpr ->
+                    if (it.expr == iffExpr.lhs || it.expr == iffExpr.rhs) {
+                        // IffE can be used on any double implication and one of its sides.
+                        availableSteps.add(Option(IffE::class, Tree(iff.id) then Tree(it.id)))
+                    }
+                }
             }
 
-            if (it.expr in notCsqs) {
-                // MT can be used on an implication and the negation of its consequent.
-                availableSteps.add(InferenceRule.MT::class)
-            }
-
-            if (it.expr is Expression.Not && it.expr.expr in exprs) {
-                // NotE can be used on any expression and its negation.
-                availableSteps.add(InferenceRule.NotE::class)
+            currScope.forEach { other ->
+                if (it.expr is Not && it.expr.expr == other.expr) {
+                    // NotE can be used on any expression and its negation.
+                    availableSteps.add(Option(NotE::class, Tree(other.id) then (Tree(it.id))))
+                }
             }
         }
 
-        return availableSteps
-            .map { it.simpleName!! }
-            .toTypedArray()
+        // TODO: merge options of identical steps.
+        return availableSteps.toTypedArray()
     }
 }
