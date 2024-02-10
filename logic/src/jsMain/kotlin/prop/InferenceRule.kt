@@ -157,7 +157,7 @@ sealed class InferenceRule {
 
     data class Sta(val orig: ID) : InferenceRule() {
         override val tag = "Sta"
-        override val latexTag = Prem.tag
+        override val latexTag = tag
         override val desc = "A previous expression repeated for clarity."
     }
 }
