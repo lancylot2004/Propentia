@@ -16,7 +16,7 @@ If server-side components are required in the future, ...
 ## Getting Started
 Compile the Kotlin to JS
 ```bash
-npm compile-kotlin
+npm run compile-kotlin
 ```
 Install NPM
 ```bash
